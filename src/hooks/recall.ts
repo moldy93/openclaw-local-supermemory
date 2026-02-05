@@ -1,6 +1,7 @@
 import type { LocalMemoryConfig } from "../config.ts"
 import { log } from "../logger.ts"
 import { LocalStore } from "../store.ts"
+import { embed, cosine } from "../embeddings.ts"
 
 function countUserTurns(messages: unknown[]): number {
   let count = 0
@@ -36,7 +37,16 @@ export function buildRecallHandler(store: LocalStore, cfg: LocalMemoryConfig) {
 
     try {
       const profile = includeProfile ? store.getProfile(cfg.maxRecallResults).map((r: any) => r.content) : []
-      const memories = store.search(prompt, cfg.maxRecallResults)
+      let memories = store.search(prompt, cfg.maxRecallResults)
+      if (cfg.embeddingProvider === "ollama" || cfg.embeddingProvider === "hash") {
+        try {
+          const qvec = await embed(prompt, cfg)
+          const sem = store.semanticSearch(qvec, cfg.maxRecallResults, cosine)
+          if (sem && sem.length > 0) memories = sem
+        } catch {
+          // keep lexical fallback
+        }
+      }
       const ctx = formatContext(profile, memories, cfg.maxRecallResults)
       if (!ctx) return
       log.debug(`injecting context (${ctx.length} chars, turn ${turn})`)

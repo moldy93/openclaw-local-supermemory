@@ -6,6 +6,9 @@ export type LocalMemoryConfig = {
   profileFrequency: number
   captureMode: "everything" | "all" | "user"
   debug: boolean
+  embeddingProvider: "hash" | "ollama"
+  embeddingModel: string
+  ollamaBaseUrl: string
 }
 
 export const defaultConfig: LocalMemoryConfig = {
@@ -16,6 +19,9 @@ export const defaultConfig: LocalMemoryConfig = {
   profileFrequency: 50,
   captureMode: "all",
   debug: false,
+  embeddingProvider: "hash",
+  embeddingModel: "nomic-embed-text",
+  ollamaBaseUrl: "http://127.0.0.1:11434",
 }
 
 export function parseConfig(cfg: Record<string, unknown> | undefined): LocalMemoryConfig {
@@ -28,5 +34,8 @@ export function parseConfig(cfg: Record<string, unknown> | undefined): LocalMemo
     profileFrequency: c.profileFrequency ?? defaultConfig.profileFrequency,
     captureMode: c.captureMode ?? defaultConfig.captureMode,
     debug: c.debug ?? defaultConfig.debug,
+    embeddingProvider: c.embeddingProvider ?? defaultConfig.embeddingProvider,
+    embeddingModel: c.embeddingModel ?? defaultConfig.embeddingModel,
+    ollamaBaseUrl: c.ollamaBaseUrl ?? defaultConfig.ollamaBaseUrl,
   }
 }
