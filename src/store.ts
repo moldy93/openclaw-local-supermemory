@@ -69,10 +69,12 @@ export class LocalStore {
     const metaJson = JSON.stringify(meta)
 
     if (this.inMemory) {
-      const id = this.hashId(content)
-      if (!this.mem.find((m) => m.id === id)) {
-        this.mem.push({ id, content, meta: metaJson, kind, created_at: createdAt })
+      const recent = this.mem.filter((m) => m.kind === kind).slice(-dedupWindow)
+      if (recent.some((m) => m.content === content)) {
+        return this.hashId(content)
       }
+      const id = this.hashId(content, createdAt)
+      this.mem.push({ id, content, meta: metaJson, kind, created_at: createdAt })
       return id
     }
 

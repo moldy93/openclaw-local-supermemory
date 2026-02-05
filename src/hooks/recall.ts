@@ -11,13 +11,12 @@ function countUserTurns(messages: unknown[]): number {
   return count
 }
 
-function formatContext(profile: string[], memories: any[], maxResults: number): string | null {
+function formatContext(profile: string[], memories: any[], maxResults: number, scoreMode: "semantic" | "bm25"): string | null {
   const prof = profile.slice(0, maxResults)
-  // Only sort by score if score is present (semantic results). For FTS (bm25), lower is better and
-  // results are already ordered in SQL, so keep order when no score is present.
-  const hasScore = memories.some((m: any) => m && typeof m.score === "number")
-  const mem = (hasScore ? memories.slice().sort((a: any, b: any) => (b.score ?? 0) - (a.score ?? 0)) : memories)
-    .slice(0, maxResults)
+  const ordered = scoreMode === "semantic"
+    ? memories.slice().sort((a: any, b: any) => (b.score ?? 0) - (a.score ?? 0))
+    : memories
+  const mem = ordered.slice(0, maxResults)
   if (prof.length === 0 && mem.length === 0) return null
 
   const sections: string[] = []
@@ -42,16 +41,20 @@ export function buildRecallHandler(store: LocalStore, cfg: LocalMemoryConfig) {
     try {
       const profile = includeProfile ? store.getProfile(cfg.maxRecallResults).map((r: any) => r.content) : []
       let memories = store.search(prompt, cfg.maxRecallResults)
+      let scoreMode: "semantic" | "bm25" = "bm25"
       if (cfg.embeddingProvider === "ollama" || cfg.embeddingProvider === "hash") {
         try {
           const qvec = await embed(prompt, cfg)
           const sem = store.semanticSearch(qvec, cfg.maxRecallResults, cosine)
-          if (sem && sem.length > 0) memories = sem
+          if (sem && sem.length > 0) {
+            memories = sem
+            scoreMode = "semantic"
+          }
         } catch {
           // keep lexical fallback
         }
       }
-      const ctx = formatContext(profile, memories, cfg.maxRecallResults)
+      const ctx = formatContext(profile, memories, cfg.maxRecallResults, scoreMode)
       if (!ctx) return
       log.debug(`injecting context (${ctx.length} chars, turn ${turn})`)
       return { prependContext: ctx }
