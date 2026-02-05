@@ -2,7 +2,8 @@ import assert from "node:assert"
 import { LocalStore } from "../src/store.ts"
 import { synthesizeProfile } from "../src/profile.ts"
 
-const store = new LocalStore("/Users/m/.openclaw/workspace/openclaw-local-supermemory/tmp-profile.db", true)
+process.env.LOCAL_SUPERMEMORY_STORE = "json"
+const store = new LocalStore("/tmp/local-supermemory-profile.db", true)
 store.mem = []
 store.saveMem()
 store.addMemory("Fact A", {}, "profile")

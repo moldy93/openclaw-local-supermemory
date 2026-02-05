@@ -1,7 +1,8 @@
 import assert from "node:assert"
 import { LocalStore } from "../src/store.ts"
 
-const store = new LocalStore(":memory:")
+process.env.LOCAL_SUPERMEMORY_STORE = "json"
+const store = new LocalStore("/tmp/local-supermemory-dedup.db")
 store.addMemory("dup", {}, "memory", undefined, 5)
 store.addMemory("dup", {}, "memory", undefined, 5)
 const res = store.search("dup", 10)

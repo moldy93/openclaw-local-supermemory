@@ -6,6 +6,7 @@ const db = "/Users/m/.openclaw/workspace/openclaw-local-supermemory/tmp-persist.
 const jsonPath = db + ".json"
 if (fs.existsSync(jsonPath)) fs.unlinkSync(jsonPath)
 
+process.env.LOCAL_SUPERMEMORY_STORE = "json"
 const store = new LocalStore(db, true)
 store.mem = []
 store.saveMem()
