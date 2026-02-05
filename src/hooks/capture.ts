@@ -30,7 +30,7 @@ export function buildCaptureHandler(
     for (const msg of lastTurn as any[]) {
       if (!msg || typeof msg !== "object") continue
       const role = msg.role
-      const isTool = role === "tool" || msg.type === "tool" || msg.toolCallId
+      const isTool = role === "tool" || msg.type === "tool" || msg.toolCallId || msg.tool_calls || msg.toolCalls
       const isSystem = role === "system"
       const isAssistant = role === "assistant"
 

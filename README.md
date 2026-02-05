@@ -29,6 +29,7 @@ Add to `~/.openclaw/openclaw.json`:
           "maxRecallResults": 10,
           "profileFrequency": 50,
           "captureMode": "all",
+          "captureFilters": ["no-tools", "no-system"],
           "debug": false
         }
       }
@@ -37,6 +38,12 @@ Add to `~/.openclaw/openclaw.json`:
 }
 ```
 Restart the Gateway after enabling.
+
+### Capture filters
+- `no-tools`: skip tool outputs (tool role or tool_calls)
+- `no-system`: skip system messages
+- `no-assistant`: skip assistant messages
+- `user-only`: capture only user content
 
 ## Dev
 ```bash
