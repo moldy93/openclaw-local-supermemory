@@ -14,7 +14,7 @@ export function registerStoreTool(api: OpenClawPluginApi, store: LocalStore, _cf
     async execute(_id, params) {
       const text = (params as any).text
       const kind = (params as any).kind || "memory"
-      const id = store.addMemory(text, { source: "tool" }, kind)
+      const id = await store.addMemory(text, { source: "tool" }, kind)
       return { content: [{ type: "text", text: `Stored (${kind}) id=${id}` }] }
     },
   })

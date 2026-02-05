@@ -66,6 +66,6 @@ export function buildCaptureHandler(
     log.debug(`capturing ${captured.length} texts (${content.length} chars)`)
     let vec: number[] | undefined
     try { vec = await embed(content, cfg) } catch {}
-    store.addMemory(content, { source: "openclaw", sessionKey: sk, timestamp: new Date().toISOString() }, "memory", vec, cfg.dedupWindow)
+    await store.addMemory(content, { source: "openclaw", sessionKey: sk, timestamp: new Date().toISOString() }, "memory", vec, cfg.dedupWindow)
   }
 }

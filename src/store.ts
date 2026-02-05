@@ -13,8 +13,53 @@ export type MemoryRow = {
 }
 
 type DbLike = {
-  exec: (sql: string) => void
-  prepare: (sql: string) => any
+  exec: (sql: string) => Promise<void>
+  prepare: (sql: string) => {
+    run: (...args: any[]) => Promise<any>
+    all: (...args: any[]) => Promise<any[]>
+  }
+}
+
+function wrapBetterSqlite(db: any): DbLike {
+  return {
+    exec: async (sql: string) => {
+      db.exec(sql)
+    },
+    prepare: (sql: string) => {
+      const stmt = db.prepare(sql)
+      return {
+        run: async (...args: any[]) => {
+          stmt.run(...args)
+        },
+        all: async (...args: any[]) => stmt.all(...args),
+      }
+    },
+  }
+}
+
+function wrapSqlite3(db: any): DbLike {
+  return {
+    exec: (sql: string) =>
+      new Promise((resolve, reject) => {
+        db.exec(sql, (err: any) => (err ? reject(err) : resolve()))
+      }),
+    prepare: (sql: string) => {
+      const stmt = db.prepare(sql)
+      return {
+        run: (...args: any[]) =>
+          new Promise((resolve, reject) => {
+            stmt.run(...args, function (err: any) {
+              if (err) reject(err)
+              else resolve(this)
+            })
+          }),
+        all: (...args: any[]) =>
+          new Promise((resolve, reject) => {
+            stmt.all(...args, (err: any, rows: any[]) => (err ? reject(err) : resolve(rows)))
+          }),
+      }
+    },
+  }
 }
 
 export class LocalStore {
@@ -22,6 +67,7 @@ export class LocalStore {
   inMemory: boolean = false
   mem: MemoryRow[] = []
   memPath: string | null = null
+  ready: Promise<void>
 
   constructor(path: string, forceJson: boolean = false) {
     if (forceJson || process.env.LOCAL_SUPERMEMORY_STORE === "json") {
@@ -29,30 +75,43 @@ export class LocalStore {
       this.memPath = path + ".json"
       this.loadMem()
       this.db = {
-        exec: () => {},
+        exec: async () => {},
         prepare: () => ({
-          run: () => {},
-          all: () => [],
+          run: async () => {},
+          all: async () => [],
         }),
       }
+      this.ready = Promise.resolve()
       return
     }
+
     try {
       const Database = require("better-sqlite3")
-      this.db = new Database(path)
-      this.init()
-    } catch (err) {
-      this.inMemory = true
-      this.memPath = path + ".json"
-      this.loadMem()
-      this.db = {
-        exec: () => {},
-        prepare: () => ({
-          run: () => {},
-          all: () => [],
-        }),
-      }
+      const db = new Database(path)
+      this.db = wrapBetterSqlite(db)
+      this.ready = this.init()
+      return
+    } catch {}
+
+    try {
+      const sqlite3 = require("sqlite3")
+      const db = new sqlite3.Database(path)
+      this.db = wrapSqlite3(db)
+      this.ready = this.init()
+      return
+    } catch {}
+
+    this.inMemory = true
+    this.memPath = path + ".json"
+    this.loadMem()
+    this.db = {
+      exec: async () => {},
+      prepare: () => ({
+        run: async () => {},
+        all: async () => [],
+      }),
     }
+    this.ready = Promise.resolve()
   }
 
   loadMem() {
@@ -75,9 +134,9 @@ export class LocalStore {
     }
   }
 
-  init() {
+  async init() {
     if (this.inMemory) return
-    this.db.exec(`
+    await this.db.exec(`
       CREATE TABLE IF NOT EXISTS memories (
         id TEXT PRIMARY KEY,
         content TEXT NOT NULL,
@@ -104,7 +163,8 @@ export class LocalStore {
     return crypto.createHash("sha1").update(content + (salt ?? "")).digest("hex")
   }
 
-  addMemory(content: string, meta: Record<string, unknown> = {}, kind = "memory", vec?: number[], dedupWindow = 5) {
+  async addMemory(content: string, meta: Record<string, unknown> = {}, kind = "memory", vec?: number[], dedupWindow = 5) {
+    await this.ready
     const createdAt = new Date().toISOString()
     const metaJson = JSON.stringify(meta)
 
@@ -119,43 +179,43 @@ export class LocalStore {
       return id
     }
 
-    // dedup: skip if similar content already stored recently (same kind)
-    const recent = this.db.prepare(
-      "SELECT id, content FROM memories WHERE kind = ? ORDER BY created_at DESC LIMIT ?"
-    ).all(kind, dedupWindow)
+    const recent = await this.db
+      .prepare("SELECT id, content FROM memories WHERE kind = ? ORDER BY created_at DESC LIMIT ?")
+      .all(kind, dedupWindow)
     if (recent.some((r: any) => r.content === content)) {
       return this.hashId(content)
     }
 
-    // allow duplicates over time by salting id with timestamp
     const id = this.hashId(content, createdAt)
 
     const insert = this.db.prepare(
       "INSERT OR IGNORE INTO memories (id, content, meta, kind, created_at) VALUES (?, ?, ?, ?, ?)"
     )
-    insert.run(id, content, metaJson, kind, createdAt)
+    await insert.run(id, content, metaJson, kind, createdAt)
 
     if (vec && vec.length > 0) {
       const insVec = this.db.prepare("INSERT OR REPLACE INTO memory_vecs (id, vec_json) VALUES (?, ?)")
-      insVec.run(id, JSON.stringify(vec))
+      await insVec.run(id, JSON.stringify(vec))
     }
 
     return id
   }
 
-  search(query: string, limit = 10) {
+  async search(query: string, limit = 10) {
+    await this.ready
     if (this.inMemory) {
       return this.mem.filter((m) => m.content.includes(query)).slice(0, limit)
     }
     const stmt = this.db.prepare(
       "SELECT m.id, m.content, m.meta, m.kind, m.created_at, bm25(memories_fts) as score FROM memories_fts JOIN memories m ON m.rowid = memories_fts.rowid WHERE memories_fts MATCH ? ORDER BY score LIMIT ?"
     )
-    return stmt.all(query, limit)
+    return await stmt.all(query, limit)
   }
 
-  semanticSearch(vec: number[], limit = 10, scoreFn?: (a:number[],b:number[])=>number) {
+  async semanticSearch(vec: number[], limit = 10, scoreFn?: (a:number[],b:number[])=>number) {
+    await this.ready
     if (this.inMemory) return []
-    const rows = this.db.prepare("SELECT id, vec_json FROM memory_vecs").all()
+    const rows = await this.db.prepare("SELECT id, vec_json FROM memory_vecs").all()
     const scored = rows.map((r: any) => {
       const v = JSON.parse(r.vec_json)
       const score = scoreFn ? scoreFn(vec, v) : 0
@@ -166,34 +226,36 @@ export class LocalStore {
     if (top.length === 0) return []
     const ids = top.map((t: any) => t.id)
     const q = `SELECT id, content, meta, kind, created_at FROM memories WHERE id IN (${ids.map(() => "?").join(",")})`
-    const results = this.db.prepare(q).all(...ids)
+    const results = await this.db.prepare(q).all(...ids)
     const byId: Record<string, any> = Object.fromEntries(results.map((r: any) => [r.id, r]))
     return top.map((t: any) => ({ ...byId[t.id], score: t.score }))
   }
 
-  getProfile(limit = 20, kind = "profile") {
+  async getProfile(limit = 20, kind = "profile") {
+    await this.ready
     if (this.inMemory) {
       return this.mem.filter((m) => m.kind === kind).slice(-limit).reverse()
     }
     const stmt = this.db.prepare(
       "SELECT id, content, meta, kind, created_at FROM memories WHERE kind = ? ORDER BY created_at DESC LIMIT ?"
     )
-    return stmt.all(kind, limit)
+    return await stmt.all(kind, limit)
   }
 
-  forget(query: string) {
+  async forget(query: string) {
+    await this.ready
     if (this.inMemory) {
       const before = this.mem.length
       this.mem = this.mem.filter((m) => !m.content.includes(query))
       this.saveMem()
       return before - this.mem.length
     }
-    const ids = this.search(query, 100).map((r: any) => r.id)
+    const ids = (await this.search(query, 100)).map((r: any) => r.id)
     if (ids.length === 0) return 0
     const del = this.db.prepare(`DELETE FROM memories WHERE id IN (${ids.map(() => "?").join(",")})`)
-    del.run(...ids)
+    await del.run(...ids)
     const delVec = this.db.prepare(`DELETE FROM memory_vecs WHERE id IN (${ids.map(() => "?").join(",")})`)
-    delVec.run(...ids)
+    await delVec.run(...ids)
     return ids.length
   }
 }
