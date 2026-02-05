@@ -209,7 +209,17 @@ export class LocalStore {
     const stmt = this.db.prepare(
       "SELECT m.id, m.content, m.meta, m.kind, m.created_at, bm25(memories_fts) as score FROM memories_fts JOIN memories m ON m.rowid = memories_fts.rowid WHERE memories_fts MATCH ? ORDER BY score LIMIT ?"
     )
-    return await stmt.all(query, limit)
+    const results = await stmt.all(query, limit)
+    if (results.length > 0) return results
+
+    const raw = String(query || "").replace(/["'`]/g, "").replace(/\*/g, "").trim()
+    if (!raw) return results
+
+    const like = `%${raw.toLowerCase()}%`
+    const stmtLike = this.db.prepare(
+      "SELECT id, content, meta, kind, created_at FROM memories WHERE lower(content) LIKE ? ORDER BY created_at DESC LIMIT ?"
+    )
+    return await stmtLike.all(like, limit)
   }
 
   async semanticSearch(vec: number[], limit = 10, scoreFn?: (a:number[],b:number[])=>number) {
