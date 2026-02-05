@@ -10,6 +10,7 @@ export type LocalMemoryConfig = {
   embeddingModel: string
   ollamaBaseUrl: string
   dedupWindow: number
+  captureFilters: string[]
 }
 
 export const defaultConfig: LocalMemoryConfig = {
@@ -24,6 +25,7 @@ export const defaultConfig: LocalMemoryConfig = {
   embeddingModel: "nomic-embed-text",
   ollamaBaseUrl: "http://127.0.0.1:11434",
   dedupWindow: 5,
+  captureFilters: ["no-tools", "no-system"],
 }
 
 export function parseConfig(cfg: Record<string, unknown> | undefined): LocalMemoryConfig {
@@ -40,5 +42,6 @@ export function parseConfig(cfg: Record<string, unknown> | undefined): LocalMemo
     embeddingModel: c.embeddingModel ?? defaultConfig.embeddingModel,
     ollamaBaseUrl: c.ollamaBaseUrl ?? defaultConfig.ollamaBaseUrl,
     dedupWindow: c.dedupWindow ?? defaultConfig.dedupWindow,
+    captureFilters: c.captureFilters ?? defaultConfig.captureFilters,
   }
 }
