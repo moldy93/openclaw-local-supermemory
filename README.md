@@ -44,6 +44,16 @@ cd openclaw-local-supermemory
 npm install
 ```
 
+## Import existing session logs
+```bash
+cd /Users/m/.openclaw/workspace/memory_pipeline
+rm -f ./data/memory.db*
+for f in ~/.openclaw/agents/main/sessions/*.jsonl; do
+  python importer.py "$f" --db ./data/memory.db
+
+done
+```
+
 ## Notes
 - This is a local-only alternative to cloud memory plugins.
 - Graph UI is served separately by the `memory_pipeline` API server.
