@@ -11,6 +11,8 @@ export type LocalMemoryConfig = {
   ollamaBaseUrl: string
   dedupWindow: number
   captureFilters: string[]
+  profileMax: number
+  profileKind: string
 }
 
 export const defaultConfig: LocalMemoryConfig = {
@@ -26,6 +28,8 @@ export const defaultConfig: LocalMemoryConfig = {
   ollamaBaseUrl: "http://127.0.0.1:11434",
   dedupWindow: 5,
   captureFilters: ["no-tools", "no-system"],
+  profileMax: 20,
+  profileKind: "profile",
 }
 
 export function parseConfig(cfg: Record<string, unknown> | undefined): LocalMemoryConfig {
@@ -43,5 +47,7 @@ export function parseConfig(cfg: Record<string, unknown> | undefined): LocalMemo
     ollamaBaseUrl: c.ollamaBaseUrl ?? defaultConfig.ollamaBaseUrl,
     dedupWindow: c.dedupWindow ?? defaultConfig.dedupWindow,
     captureFilters: c.captureFilters ?? defaultConfig.captureFilters,
+    profileMax: c.profileMax ?? defaultConfig.profileMax,
+    profileKind: c.profileKind ?? defaultConfig.profileKind,
   }
 }
