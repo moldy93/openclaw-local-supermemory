@@ -63,7 +63,9 @@ done
 
 ## Backfill (run auto-capture on historical sessions)
 ```bash
-node --import tsx /Users/m/.openclaw/workspace/openclaw-local-supermemory/scripts/backfill.mjs
+node --import tsx ./scripts/backfill.mjs
+# Optional: custom sessions dir
+# node --import tsx ./scripts/backfill.mjs /path/to/sessions
 ```
 
 ## Notes

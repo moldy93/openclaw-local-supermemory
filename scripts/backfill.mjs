@@ -6,7 +6,8 @@ import { defaultConfig, parseConfig } from "../src/config.ts";
 
 function loadPluginConfig() {
   try {
-    const raw = fs.readFileSync("/Users/m/.openclaw/openclaw.json", "utf-8");
+    const home = process.env.HOME || "/Users/m";
+    const raw = fs.readFileSync(path.join(home, ".openclaw", "openclaw.json"), "utf-8");
     const cfg = JSON.parse(raw);
     const p = cfg?.plugins?.entries?.["openclaw-local-supermemory"]?.config;
     return parseConfig(p);
@@ -36,7 +37,8 @@ function groupTurns(messages) {
   return turns;
 }
 
-const dir = process.argv[2] || "/Users/m/.openclaw/agents/main/sessions";
+const home = process.env.HOME || "/Users/m";
+const dir = process.argv[2] || path.join(home, ".openclaw", "agents", "main", "sessions");
 const cfg = loadPluginConfig();
 const store = new LocalStore(cfg.dbPath);
 const capture = buildCaptureHandler(store, cfg, () => undefined);
