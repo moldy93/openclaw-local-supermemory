@@ -10,12 +10,15 @@
     "src"
   ],
   "scripts": {
-    "test": "node tests/store.test.js && node tests/capture.test.js && node tests/recall.test.js"
+    "test": "node --import tsx tests/store.test.js && node --import tsx tests/capture.test.js && node --import tsx tests/recall.test.js"
   },
   "dependencies": {
     "sql.js": "^1.11.0"
   },
   "optionalDependencies": {
     "better-sqlite3": "^9.4.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.1"
   }
 }
