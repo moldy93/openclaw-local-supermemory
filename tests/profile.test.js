@@ -8,6 +8,6 @@ store.addMemory("Fact A", {}, "profile")
 store.addMemory("Fact B", {}, "profile")
 
 const profile = synthesizeProfile(store, 10, "profile")
-assert.deepStrictEqual(profile, ["Fact A", "Fact B"])
+assert.deepStrictEqual(profile, ["Fact B", "Fact A"])
 
 console.log("profile.test ok")

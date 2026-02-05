@@ -132,7 +132,7 @@ export class LocalStore {
 
   getProfile(limit = 20, kind = "profile") {
     if (this.inMemory) {
-      return this.mem.filter((m) => m.kind === kind).slice(0, limit)
+      return this.mem.filter((m) => m.kind === kind).slice(-limit).reverse()
     }
     const stmt = this.db.prepare(
       "SELECT id, content, meta, kind, created_at FROM memories WHERE kind = ? ORDER BY created_at DESC LIMIT ?"
