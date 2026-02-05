@@ -51,6 +51,7 @@ export class LocalStore {
       END;
       CREATE TRIGGER IF NOT EXISTS memories_ad AFTER DELETE ON memories BEGIN
         DELETE FROM memories_fts WHERE rowid = old.rowid;
+        DELETE FROM memory_vecs WHERE id = old.id;
       END;
       CREATE TABLE IF NOT EXISTS memory_vecs (
         id TEXT PRIMARY KEY,
@@ -136,6 +137,8 @@ export class LocalStore {
     if (ids.length === 0) return 0
     const del = this.db.prepare(`DELETE FROM memories WHERE id IN (${ids.map(() => "?").join(",")})`)
     del.run(...ids)
+    const delVec = this.db.prepare(`DELETE FROM memory_vecs WHERE id IN (${ids.map(() => "?").join(",")})`)
+    delVec.run(...ids)
     return ids.length
   }
 }

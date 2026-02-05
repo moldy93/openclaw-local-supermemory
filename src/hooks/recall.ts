@@ -39,9 +39,13 @@ export function buildRecallHandler(store: LocalStore, cfg: LocalMemoryConfig) {
       const profile = includeProfile ? store.getProfile(cfg.maxRecallResults).map((r: any) => r.content) : []
       let memories = store.search(prompt, cfg.maxRecallResults)
       if (cfg.embeddingProvider === "ollama" || cfg.embeddingProvider === "hash") {
-        const qvec = await embed(prompt, cfg)
-        const sem = store.semanticSearch(qvec, cfg.maxRecallResults, cosine)
-        if (sem && sem.length > 0) memories = sem
+        try {
+          const qvec = await embed(prompt, cfg)
+          const sem = store.semanticSearch(qvec, cfg.maxRecallResults, cosine)
+          if (sem && sem.length > 0) memories = sem
+        } catch {
+          // keep lexical fallback
+        }
       }
       const ctx = formatContext(profile, memories, cfg.maxRecallResults)
       if (!ctx) return
