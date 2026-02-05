@@ -2,6 +2,7 @@ import type { OpenClawPluginApi } from "openclaw/plugin-sdk"
 import type { LocalMemoryConfig } from "../config.ts"
 import { LocalStore } from "../store.ts"
 import { log } from "../logger.ts"
+import fs from "node:fs"
 
 export function registerCommands(api: OpenClawPluginApi, store: LocalStore, cfg: LocalMemoryConfig) {
   api.registerCommand({
@@ -63,6 +64,34 @@ export function registerCommands(api: OpenClawPluginApi, store: LocalStore, cfg:
       if (!q) return { text: "Usage: /forget <query>" }
       const n = await store.forget(q)
       return { text: `Deleted ${n} memories.` }
+    },
+  })
+
+  api.registerCommand({
+    name: "memstats",
+    description: "Show local memory stats",
+    acceptsArgs: false,
+    requireAuth: true,
+    handler: async () => {
+      log.info("local-supermemory: /memstats")
+      const rows = await store.search("", 1).catch(() => [])
+      let count = 0
+      try {
+        // try direct count if DB available
+        // @ts-ignore
+        if (!store.inMemory && store.db?.prepare) {
+          // @ts-ignore
+          const res = await store.db.prepare("SELECT count(*) as n FROM memories").all()
+          count = res?.[0]?.n ?? 0
+        }
+      } catch {}
+
+      const dbPath = cfg.dbPath
+      const dbExists = fs.existsSync(dbPath)
+      const mode = store.inMemory ? "in-memory" : "sqlite"
+      return {
+        text: `memstats\n- mode: ${mode}\n- dbPath: ${dbPath}\n- dbExists: ${dbExists}\n- memories: ${count}\n- sample: ${rows?.length ?? 0}`,
+      }
     },
   })
 }
