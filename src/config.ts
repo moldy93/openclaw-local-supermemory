@@ -9,6 +9,7 @@ export type LocalMemoryConfig = {
   embeddingProvider: "hash" | "ollama"
   embeddingModel: string
   ollamaBaseUrl: string
+  dedupWindow: number
 }
 
 export const defaultConfig: LocalMemoryConfig = {
@@ -22,6 +23,7 @@ export const defaultConfig: LocalMemoryConfig = {
   embeddingProvider: "hash",
   embeddingModel: "nomic-embed-text",
   ollamaBaseUrl: "http://127.0.0.1:11434",
+  dedupWindow: 5,
 }
 
 export function parseConfig(cfg: Record<string, unknown> | undefined): LocalMemoryConfig {
@@ -37,5 +39,6 @@ export function parseConfig(cfg: Record<string, unknown> | undefined): LocalMemo
     embeddingProvider: c.embeddingProvider ?? defaultConfig.embeddingProvider,
     embeddingModel: c.embeddingModel ?? defaultConfig.embeddingModel,
     ollamaBaseUrl: c.ollamaBaseUrl ?? defaultConfig.ollamaBaseUrl,
+    dedupWindow: c.dedupWindow ?? defaultConfig.dedupWindow,
   }
 }

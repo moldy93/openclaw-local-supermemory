@@ -60,21 +60,34 @@ export class LocalStore {
     `)
   }
 
-  private hashId(content: string) {
-    return crypto.createHash("sha1").update(content).digest("hex")
+  private hashId(content: string, salt?: string) {
+    return crypto.createHash("sha1").update(content + (salt ?? "")).digest("hex")
   }
 
-  addMemory(content: string, meta: Record<string, unknown> = {}, kind = "memory", vec?: number[]) {
-    const id = this.hashId(content)
+  addMemory(content: string, meta: Record<string, unknown> = {}, kind = "memory", vec?: number[], dedupWindow = 5) {
     const createdAt = new Date().toISOString()
     const metaJson = JSON.stringify(meta)
 
     if (this.inMemory) {
-      if (!this.mem.find((m) => m.id === id)) {
-        this.mem.push({ id, content, meta: metaJson, kind, created_at: createdAt })
+      const recent = this.mem.filter((m) => m.kind === kind).slice(-dedupWindow)
+      if (recent.some((m) => m.content === content)) {
+        return this.hashId(content)
       }
+      const id = this.hashId(content, createdAt)
+      this.mem.push({ id, content, meta: metaJson, kind, created_at: createdAt })
       return id
     }
+
+    // dedup: skip if similar content already stored recently (same kind)
+    const recent = this.db.prepare(
+      "SELECT id, content FROM memories WHERE kind = ? ORDER BY created_at DESC LIMIT ?"
+    ).all(kind, dedupWindow)
+    if (recent.some((r: any) => r.content === content)) {
+      return this.hashId(content)
+    }
+
+    // allow duplicates over time by salting id with timestamp
+    const id = this.hashId(content, createdAt)
 
     const insert = this.db.prepare(
       "INSERT OR IGNORE INTO memories (id, content, meta, kind, created_at) VALUES (?, ?, ?, ?, ?)"
