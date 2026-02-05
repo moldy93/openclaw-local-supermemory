@@ -9,7 +9,13 @@
     "openclaw.plugin.json",
     "src"
   ],
+  "scripts": {
+    "test": "node tests/store.test.js && node tests/capture.test.js && node tests/recall.test.js"
+  },
   "dependencies": {
+    "sql.js": "^1.11.0"
+  },
+  "optionalDependencies": {
     "better-sqlite3": "^9.4.1"
   }
 }

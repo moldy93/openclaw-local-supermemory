@@ -1,6 +1,7 @@
 import type { LocalMemoryConfig } from "../config.ts"
 import { log } from "../logger.ts"
 import { LocalStore } from "../store.ts"
+import { redact } from "../redact.ts"
 
 function getLastTurn(messages: unknown[]): unknown[] {
   let lastUserIdx = -1
@@ -29,6 +30,8 @@ export function buildCaptureHandler(
       if (!msg || typeof msg !== "object") continue
       const role = msg.role
       if (role !== "user" && role !== "assistant") continue
+      if (cfg.captureMode === "user" && role !== "user") continue
+
       const content = msg.content
       const parts: string[] = []
 
@@ -48,7 +51,7 @@ export function buildCaptureHandler(
 
     if (captured.length === 0) return
 
-    const content = captured.join("\n\n")
+    const content = redact(captured.join("\n\n"))
     const sk = getSessionKey()
 
     log.debug(`capturing ${captured.length} texts (${content.length} chars)`)

@@ -12,7 +12,7 @@
       "autoCapture": { "type": "boolean" },
       "maxRecallResults": { "type": "number", "minimum": 1, "maximum": 50 },
       "profileFrequency": { "type": "number", "minimum": 1, "maximum": 500 },
-      "captureMode": { "type": "string", "enum": ["everything", "all"] },
+      "captureMode": { "type": "string", "enum": ["everything", "all", "user"] },
       "debug": { "type": "boolean" }
     },
     "required": []

@@ -4,7 +4,7 @@ export type LocalMemoryConfig = {
   autoCapture: boolean
   maxRecallResults: number
   profileFrequency: number
-  captureMode: "everything" | "all"
+  captureMode: "everything" | "all" | "user"
   debug: boolean
 }
 

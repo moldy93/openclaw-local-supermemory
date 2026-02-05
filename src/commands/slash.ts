@@ -24,10 +24,14 @@ export function registerCommands(api: OpenClawPluginApi, store: LocalStore, cfg:
     handler: async (ctx: { args?: string }) => {
       const q = ctx.args?.trim()
       if (!q) return { text: "Usage: /recall <query>" }
-      const results = store.search(q, cfg.maxRecallResults)
-      if (results.length === 0) return { text: `No memories found for: \"${q}\"` }
-      const lines = results.map((r: any, i: number) => `${i + 1}. ${r.content}`)
-      return { text: `Found ${results.length} memories:\n\n${lines.join("\n")}` }
+      try {
+        const results = store.search(q, cfg.maxRecallResults)
+        if (results.length === 0) return { text: `No memories found for: \"${q}\"` }
+        const lines = results.map((r: any, i: number) => `${i + 1}. ${r.content}`)
+        return { text: `Found ${results.length} memories:\n\n${lines.join("\n")}` }
+      } catch (err) {
+        return { text: "Search failed (invalid query)." }
+      }
     },
   })
 
