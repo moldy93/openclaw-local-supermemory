@@ -15,7 +15,7 @@ export function registerSearchTool(api: OpenClawPluginApi, store: LocalStore, _c
       const query = (params as any).query
       const limit = (params as any).limit ?? 10
       try {
-        const results = store.search(query, limit)
+        const results = await store.search(query, limit)
         return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] }
       } catch (err) {
         return { content: [{ type: "text", text: "Search failed (invalid query)." }] }

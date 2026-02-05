@@ -40,13 +40,13 @@ export function buildRecallHandler(store: LocalStore, cfg: LocalMemoryConfig) {
     const includeProfile = turn <= 1 || turn % cfg.profileFrequency === 0
 
     try {
-      const profile = includeProfile ? synthesizeProfile(store, cfg.profileMax, cfg.profileKind) : []
-      let memories = store.search(prompt, cfg.maxRecallResults)
+      const profile = includeProfile ? await synthesizeProfile(store, cfg.profileMax, cfg.profileKind) : []
+      let memories = await store.search(prompt, cfg.maxRecallResults)
       let scoreMode: "semantic" | "bm25" = "bm25"
       if (cfg.embeddingProvider === "ollama" || cfg.embeddingProvider === "hash") {
         try {
           const qvec = await embed(prompt, cfg)
-          const sem = store.semanticSearch(qvec, cfg.maxRecallResults, cosine)
+          const sem = await store.semanticSearch(qvec, cfg.maxRecallResults, cosine)
           if (sem && sem.length > 0) {
             memories = sem
             scoreMode = "semantic"

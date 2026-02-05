@@ -8,7 +8,7 @@ export function registerProfileTool(api: OpenClawPluginApi, store: LocalStore, _
     description: "View the local user profile (persistent facts)",
     parameters: { type: "object", properties: {} },
     async execute() {
-      const rows = store.getProfile(50)
+      const rows = await store.getProfile(50)
       return { content: [{ type: "text", text: JSON.stringify(rows, null, 2) }] }
     },
   })

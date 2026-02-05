@@ -13,7 +13,7 @@ export function registerForgetTool(api: OpenClawPluginApi, store: LocalStore, _c
     },
     async execute(_id, params) {
       const query = (params as any).query
-      const n = store.forget(query)
+      const n = await store.forget(query)
       return { content: [{ type: "text", text: `Deleted ${n} memories` }] }
     },
   })
