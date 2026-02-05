@@ -61,6 +61,11 @@ for f in ~/.openclaw/agents/main/sessions/*.jsonl; do
 done
 ```
 
+## Backfill (run auto-capture on historical sessions)
+```bash
+node --import tsx /Users/m/.openclaw/workspace/openclaw-local-supermemory/scripts/backfill.mjs
+```
+
 ## Notes
 - This is a local-only alternative to cloud memory plugins.
 - Graph UI is served separately by the `memory_pipeline` API server.
