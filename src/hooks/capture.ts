@@ -30,8 +30,16 @@ export function buildCaptureHandler(
     for (const msg of lastTurn as any[]) {
       if (!msg || typeof msg !== "object") continue
       const role = msg.role
-      if (role !== "user" && role !== "assistant") continue
+      const isTool = role === "tool" || msg.type === "tool" || msg.toolCallId || msg.tool_calls || msg.toolCalls
+      const isSystem = role === "system"
+      const isAssistant = role === "assistant"
+
+      const filters = cfg.captureFilters ?? []
       if (cfg.captureMode === "user" && role !== "user") continue
+      if (filters.includes("user-only") && role !== "user") continue
+      if (filters.includes("no-tools") && isTool) continue
+      if (filters.includes("no-system") && isSystem) continue
+      if (filters.includes("no-assistant") && isAssistant) continue
 
       const content = msg.content
       const parts: string[] = []

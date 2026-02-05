@@ -10,7 +10,7 @@
     "src"
   ],
   "scripts": {
-    "test": "node --import tsx tests/store.test.js && node --import tsx tests/capture.test.js && node --import tsx tests/recall.test.js && node --import tsx tests/embedding.test.js && node --import tsx tests/dedup.test.js"
+    "test": "node --import tsx tests/store.test.js && node --import tsx tests/capture.test.js && node --import tsx tests/recall.test.js && node --import tsx tests/embedding.test.js && node --import tsx tests/dedup.test.js && node --import tsx tests/capture-filters.test.js"
   },
   "dependencies": {
     "sql.js": "^1.11.0"
