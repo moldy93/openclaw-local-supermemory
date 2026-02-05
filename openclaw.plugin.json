@@ -16,7 +16,8 @@
       "debug": { "type": "boolean" },
       "embeddingProvider": { "type": "string", "enum": ["hash", "ollama"] },
       "embeddingModel": { "type": "string" },
-      "ollamaBaseUrl": { "type": "string" }
+      "ollamaBaseUrl": { "type": "string" },
+      "dedupWindow": { "type": "number", "minimum": 1, "maximum": 50 }
     },
     "required": []
   }

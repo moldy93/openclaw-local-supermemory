@@ -13,7 +13,9 @@ function countUserTurns(messages: unknown[]): number {
 
 function formatContext(profile: string[], memories: any[], maxResults: number): string | null {
   const prof = profile.slice(0, maxResults)
-  const mem = memories.slice(0, maxResults)
+  const mem = memories
+    .slice(0, maxResults)
+    .sort((a: any, b: any) => (b.score ?? 0) - (a.score ?? 0))
   if (prof.length === 0 && mem.length === 0) return null
 
   const sections: string[] = []

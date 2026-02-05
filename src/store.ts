@@ -64,7 +64,7 @@ export class LocalStore {
     return crypto.createHash("sha1").update(content).digest("hex")
   }
 
-  addMemory(content: string, meta: Record<string, unknown> = {}, kind = "memory", vec?: number[]) {
+  addMemory(content: string, meta: Record<string, unknown> = {}, kind = "memory", vec?: number[], dedupWindow = 5) {
     const id = this.hashId(content)
     const createdAt = new Date().toISOString()
     const metaJson = JSON.stringify(meta)
@@ -73,6 +73,14 @@ export class LocalStore {
       if (!this.mem.find((m) => m.id === id)) {
         this.mem.push({ id, content, meta: metaJson, kind, created_at: createdAt })
       }
+      return id
+    }
+
+    // dedup: skip if similar content already stored recently (same kind)
+    const recent = this.db.prepare(
+      "SELECT id, content FROM memories WHERE kind = ? ORDER BY created_at DESC LIMIT ?"
+    ).all(kind, dedupWindow)
+    if (recent.some((r: any) => r.content === content)) {
       return id
     }
 
