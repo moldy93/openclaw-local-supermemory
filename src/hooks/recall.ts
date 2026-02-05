@@ -13,9 +13,11 @@ function countUserTurns(messages: unknown[]): number {
 
 function formatContext(profile: string[], memories: any[], maxResults: number): string | null {
   const prof = profile.slice(0, maxResults)
-  const mem = memories
+  // Only sort by score if score is present (semantic results). For FTS (bm25), lower is better and
+  // results are already ordered in SQL, so keep order when no score is present.
+  const hasScore = memories.some((m: any) => m && typeof m.score === "number")
+  const mem = (hasScore ? memories.slice().sort((a: any, b: any) => (b.score ?? 0) - (a.score ?? 0)) : memories)
     .slice(0, maxResults)
-    .sort((a: any, b: any) => (b.score ?? 0) - (a.score ?? 0))
   if (prof.length === 0 && mem.length === 0) return null
 
   const sections: string[] = []

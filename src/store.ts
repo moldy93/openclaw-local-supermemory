@@ -60,16 +60,16 @@ export class LocalStore {
     `)
   }
 
-  private hashId(content: string) {
-    return crypto.createHash("sha1").update(content).digest("hex")
+  private hashId(content: string, salt?: string) {
+    return crypto.createHash("sha1").update(content + (salt ?? "")).digest("hex")
   }
 
   addMemory(content: string, meta: Record<string, unknown> = {}, kind = "memory", vec?: number[], dedupWindow = 5) {
-    const id = this.hashId(content)
     const createdAt = new Date().toISOString()
     const metaJson = JSON.stringify(meta)
 
     if (this.inMemory) {
+      const id = this.hashId(content)
       if (!this.mem.find((m) => m.id === id)) {
         this.mem.push({ id, content, meta: metaJson, kind, created_at: createdAt })
       }
@@ -81,8 +81,11 @@ export class LocalStore {
       "SELECT id, content FROM memories WHERE kind = ? ORDER BY created_at DESC LIMIT ?"
     ).all(kind, dedupWindow)
     if (recent.some((r: any) => r.content === content)) {
-      return id
+      return this.hashId(content)
     }
+
+    // allow duplicates over time by salting id with timestamp
+    const id = this.hashId(content, createdAt)
 
     const insert = this.db.prepare(
       "INSERT OR IGNORE INTO memories (id, content, meta, kind, created_at) VALUES (?, ?, ?, ?, ?)"
