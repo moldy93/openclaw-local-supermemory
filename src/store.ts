@@ -1,4 +1,8 @@
 import crypto from "node:crypto"
+import fs from "node:fs"
+import path from "node:path"
+import { createRequire } from "node:module"
+const require = createRequire(import.meta.url)
 
 export type MemoryRow = {
   id: string
@@ -17,14 +21,13 @@ export class LocalStore {
   db: DbLike
   inMemory: boolean = false
   mem: MemoryRow[] = []
+  memPath: string | null = null
 
-  constructor(path: string) {
-    try {
-      const Database = require("better-sqlite3")
-      this.db = new Database(path)
-      this.init()
-    } catch (err) {
+  constructor(path: string, forceJson: boolean = false) {
+    if (forceJson || process.env.LOCAL_SUPERMEMORY_STORE === "json") {
       this.inMemory = true
+      this.memPath = path + ".json"
+      this.loadMem()
       this.db = {
         exec: () => {},
         prepare: () => ({
@@ -32,6 +35,43 @@ export class LocalStore {
           all: () => [],
         }),
       }
+      return
+    }
+    try {
+      const Database = require("better-sqlite3")
+      this.db = new Database(path)
+      this.init()
+    } catch (err) {
+      this.inMemory = true
+      this.memPath = path + ".json"
+      this.loadMem()
+      this.db = {
+        exec: () => {},
+        prepare: () => ({
+          run: () => {},
+          all: () => [],
+        }),
+      }
+    }
+  }
+
+  loadMem() {
+    if (!this.memPath) return
+    try {
+      if (fs.existsSync(this.memPath)) {
+        const raw = fs.readFileSync(this.memPath, "utf-8")
+        this.mem = JSON.parse(raw)
+      }
+    } catch {}
+  }
+
+  saveMem() {
+    if (!this.memPath) return
+    try {
+      fs.mkdirSync(path.dirname(this.memPath), { recursive: true })
+      fs.writeFileSync(this.memPath, JSON.stringify(this.mem, null, 2))
+    } catch (e) {
+      console.error("local-supermemory saveMem failed", e)
     }
   }
 
@@ -75,6 +115,7 @@ export class LocalStore {
       }
       const id = this.hashId(content, createdAt)
       this.mem.push({ id, content, meta: metaJson, kind, created_at: createdAt })
+      this.saveMem()
       return id
     }
 
@@ -144,6 +185,7 @@ export class LocalStore {
     if (this.inMemory) {
       const before = this.mem.length
       this.mem = this.mem.filter((m) => !m.content.includes(query))
+      this.saveMem()
       return before - this.mem.length
     }
     const ids = this.search(query, 100).map((r: any) => r.id)
