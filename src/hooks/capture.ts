@@ -2,6 +2,7 @@ import type { LocalMemoryConfig } from "../config.ts"
 import { log } from "../logger.ts"
 import { LocalStore } from "../store.ts"
 import { redact } from "../redact.ts"
+import { embed } from "../embeddings.ts"
 
 function getLastTurn(messages: unknown[]): unknown[] {
   let lastUserIdx = -1
@@ -55,6 +56,8 @@ export function buildCaptureHandler(
     const sk = getSessionKey()
 
     log.debug(`capturing ${captured.length} texts (${content.length} chars)`)
-    store.addMemory(content, { source: "openclaw", sessionKey: sk, timestamp: new Date().toISOString() }, "memory")
+    let vec: number[] | undefined
+    try { vec = await embed(content, cfg) } catch {}
+    store.addMemory(content, { source: "openclaw", sessionKey: sk, timestamp: new Date().toISOString() }, "memory", vec)
   }
 }

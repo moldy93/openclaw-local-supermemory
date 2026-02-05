@@ -52,6 +52,10 @@ export class LocalStore {
       CREATE TRIGGER IF NOT EXISTS memories_ad AFTER DELETE ON memories BEGIN
         DELETE FROM memories_fts WHERE rowid = old.rowid;
       END;
+      CREATE TABLE IF NOT EXISTS memory_vecs (
+        id TEXT PRIMARY KEY,
+        vec_json TEXT NOT NULL
+      );
     `)
   }
 
@@ -59,7 +63,7 @@ export class LocalStore {
     return crypto.createHash("sha1").update(content).digest("hex")
   }
 
-  addMemory(content: string, meta: Record<string, unknown> = {}, kind = "memory") {
+  addMemory(content: string, meta: Record<string, unknown> = {}, kind = "memory", vec?: number[]) {
     const id = this.hashId(content)
     const createdAt = new Date().toISOString()
     const metaJson = JSON.stringify(meta)
@@ -75,6 +79,12 @@ export class LocalStore {
       "INSERT OR IGNORE INTO memories (id, content, meta, kind, created_at) VALUES (?, ?, ?, ?, ?)"
     )
     insert.run(id, content, metaJson, kind, createdAt)
+
+    if (vec && vec.length > 0) {
+      const insVec = this.db.prepare("INSERT OR REPLACE INTO memory_vecs (id, vec_json) VALUES (?, ?)")
+      insVec.run(id, JSON.stringify(vec))
+    }
+
     return id
   }
 
@@ -86,6 +96,24 @@ export class LocalStore {
       "SELECT m.id, m.content, m.meta, m.kind, m.created_at, bm25(memories_fts) as score FROM memories_fts JOIN memories m ON m.rowid = memories_fts.rowid WHERE memories_fts MATCH ? ORDER BY score LIMIT ?"
     )
     return stmt.all(query, limit)
+  }
+
+  semanticSearch(vec: number[], limit = 10, scoreFn?: (a:number[],b:number[])=>number) {
+    if (this.inMemory) return []
+    const rows = this.db.prepare("SELECT id, vec_json FROM memory_vecs").all()
+    const scored = rows.map((r: any) => {
+      const v = JSON.parse(r.vec_json)
+      const score = scoreFn ? scoreFn(vec, v) : 0
+      return { id: r.id, score }
+    })
+    scored.sort((a: any,b: any) => b.score - a.score)
+    const top = scored.slice(0, limit)
+    if (top.length === 0) return []
+    const ids = top.map((t: any) => t.id)
+    const q = `SELECT id, content, meta, kind, created_at FROM memories WHERE id IN (${ids.map(() => "?").join(",")})`
+    const results = this.db.prepare(q).all(...ids)
+    const byId: Record<string, any> = Object.fromEntries(results.map((r: any) => [r.id, r]))
+    return top.map((t: any) => ({ ...byId[t.id], score: t.score }))
   }
 
   getProfile(limit = 20) {
