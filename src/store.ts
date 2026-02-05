@@ -46,6 +46,10 @@ export class LocalStore {
         created_at TEXT
       );
       CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(content, id, kind);
+      CREATE TABLE IF NOT EXISTS memory_vecs (
+        id TEXT PRIMARY KEY,
+        vec_json TEXT NOT NULL
+      );
       CREATE TRIGGER IF NOT EXISTS memories_ai AFTER INSERT ON memories BEGIN
         INSERT INTO memories_fts (rowid, content, id, kind) VALUES (new.rowid, new.content, new.id, new.kind);
       END;
@@ -53,10 +57,6 @@ export class LocalStore {
         DELETE FROM memories_fts WHERE rowid = old.rowid;
         DELETE FROM memory_vecs WHERE id = old.id;
       END;
-      CREATE TABLE IF NOT EXISTS memory_vecs (
-        id TEXT PRIMARY KEY,
-        vec_json TEXT NOT NULL
-      );
     `)
   }
 
