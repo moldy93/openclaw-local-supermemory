@@ -16,8 +16,9 @@ function loadPluginConfig() {
 }
 
 function normalizeMessage(obj) {
-  const role = obj.role || obj.speaker || obj.author || obj.type;
-  const content = obj.content || obj.text || obj.message || obj.body;
+  const msg = obj?.message || obj?.data?.message || obj?.payload?.message;
+  const role = obj.role || msg?.role || obj.speaker || obj.author || obj.type;
+  const content = obj.content || msg?.content || obj.text || obj.message || obj.body;
   return { role, content };
 }
 
