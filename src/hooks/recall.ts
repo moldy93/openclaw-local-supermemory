@@ -2,6 +2,7 @@ import type { LocalMemoryConfig } from "../config.ts"
 import { log } from "../logger.ts"
 import { LocalStore } from "../store.ts"
 import { embed, cosine } from "../embeddings.ts"
+import { synthesizeProfile } from "../profile.ts"
 
 function countUserTurns(messages: unknown[]): number {
   let count = 0
@@ -39,7 +40,7 @@ export function buildRecallHandler(store: LocalStore, cfg: LocalMemoryConfig) {
     const includeProfile = turn <= 1 || turn % cfg.profileFrequency === 0
 
     try {
-      const profile = includeProfile ? store.getProfile(cfg.maxRecallResults).map((r: any) => r.content) : []
+      const profile = includeProfile ? synthesizeProfile(store, cfg.profileMax, cfg.profileKind) : []
       let memories = store.search(prompt, cfg.maxRecallResults)
       let scoreMode: "semantic" | "bm25" = "bm25"
       if (cfg.embeddingProvider === "ollama" || cfg.embeddingProvider === "hash") {

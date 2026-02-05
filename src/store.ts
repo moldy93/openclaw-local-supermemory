@@ -130,14 +130,14 @@ export class LocalStore {
     return top.map((t: any) => ({ ...byId[t.id], score: t.score }))
   }
 
-  getProfile(limit = 20) {
+  getProfile(limit = 20, kind = "profile") {
     if (this.inMemory) {
-      return this.mem.filter((m) => m.kind === "profile").slice(0, limit)
+      return this.mem.filter((m) => m.kind === kind).slice(-limit).reverse()
     }
     const stmt = this.db.prepare(
-      "SELECT id, content, meta, kind, created_at FROM memories WHERE kind = 'profile' ORDER BY created_at DESC LIMIT ?"
+      "SELECT id, content, meta, kind, created_at FROM memories WHERE kind = ? ORDER BY created_at DESC LIMIT ?"
     )
-    return stmt.all(limit)
+    return stmt.all(kind, limit)
   }
 
   forget(query: string) {
