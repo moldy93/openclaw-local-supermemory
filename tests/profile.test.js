@@ -2,7 +2,10 @@ import assert from "node:assert"
 import { LocalStore } from "../src/store.ts"
 import { synthesizeProfile } from "../src/profile.ts"
 
-const store = new LocalStore(":memory:")
+process.env.LOCAL_SUPERMEMORY_STORE = "json"
+const store = new LocalStore("/tmp/local-supermemory-profile.db", true)
+store.mem = []
+store.saveMem()
 store.addMemory("Fact A", {}, "profile")
 store.addMemory("Fact A", {}, "profile")
 store.addMemory("Fact B", {}, "profile")

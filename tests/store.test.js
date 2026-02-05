@@ -2,7 +2,8 @@ import assert from "node:assert"
 import { LocalStore } from "../src/store.ts"
 import fs from "node:fs"
 
-const dbPath = "/Users/m/.openclaw/workspace/openclaw-local-supermemory/tmp-test.db"
+process.env.LOCAL_SUPERMEMORY_STORE = "json"
+const dbPath = "/tmp/local-supermemory-test.db"
 if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath)
 
 const store = new LocalStore(dbPath)
